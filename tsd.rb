@@ -31,24 +31,33 @@ def result_tuple(gt_i, f)
   tree = get_tree_from_gt(gt_i)
   gt_te = gt_i[length - 2]
   gt_ts = gt_i[length - 3]
-  final_result = 0
+  final_sum = 0
+  count = 0
   tree.entries.each do |entry|
     if entry[0] > gt_ts
       node_end = entry[0]
       entry[1].each do |value|
         if not value.empty?
           node_value_start = value[:start]
-          result = value[f[1]] * (gt_te - gt_ts + 1) / (node_end - node_value_start + 1)
-        else
-          result = 0
-        end
-        if f[0] == "sum"
-          final_result += result
+          row_sum = value[f[1]] * (gt_te - gt_ts + 1) / (node_end - node_value_start + 1)
+          final_sum += row_sum
+          count += 1 
         end
       end
     end
   end
-  result_tuple = gt_i.first(length-1).push(final_result)
+  if count != 0
+    if f[0] == "sum"
+      result_tuple = gt_i.first(length-1).push(final_sum)
+    elsif f[0] == "count"
+      result_tuple = gt_i.first(length-1).push(count)
+    elsif f[0] == "avg"
+      result_tuple = gt_i.first(length-1).push(final_sum / count)
+    end
+  else
+    result_tuple = nil
+  end
+  result_tuple 
 end
 
 def tmdi_ci(g,r,f,theta)
@@ -75,7 +84,7 @@ def tmdi_ci(g,r,f,theta)
         nodes_to_close.each do |v|
           gt[i][gt_te] = v[0]
           result_tuple = result_tuple(gt[i], f)
-          if result_tuple.last != 0
+          if result_tuple != nil
             z << result_tuple
           end
           gt[i][gt_ts] = v[0] + 1
@@ -116,7 +125,7 @@ g = [[0]]
 =end
 g = [[1], [2]]
 r = [[1, 2400, 1, 15], [1, 600, 19, 21], [1, 500, 1, 5], [1, 1000, 6, 15], [1, 600, 13, 24], [1, 400, 1, 10], [2, 1200, 4, 10], [2, 900, 13, 18]]
-f = ["sum",1]
+f = ["count",1]
 theta=[[0,0]]
 puts tmdi_ci(g,r,f,theta).inspect
 
