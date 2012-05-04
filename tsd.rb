@@ -60,7 +60,7 @@ def result_tuple(gt_i, f)
   result_tuple 
 end
 
-def tmdi_ci(g,r,f,theta)
+def tmda_ci(g,r,f,theta)
   z = []
   gt = init_gt(g)
   r_nr_columns = r[0].length
@@ -83,6 +83,7 @@ def tmdi_ci(g,r,f,theta)
         # CLOSE NODES 
         nodes_to_close.each do |v|
           gt[i][gt_te] = v[0]
+          puts gt[i].inspect
           result_tuple = result_tuple(gt[i], f)
           if result_tuple != nil
             z << result_tuple
@@ -127,7 +128,7 @@ g = [[1], [2]]
 r = [[1, 2400, 1, 15], [1, 600, 19, 21], [1, 500, 1, 5], [1, 1000, 6, 15], [1, 600, 13, 24], [1, 400, 1, 10], [2, 1200, 4, 10], [2, 900, 13, 18]]
 f = ["count",1]
 theta=[[0,0]]
-puts tmdi_ci(g,r,f,theta).inspect
+puts tmda_ci(g,r,f,theta).inspect
 
 
 
