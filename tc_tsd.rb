@@ -47,6 +47,21 @@ class TestTsd < Test::Unit::TestCase
     assert_equal(res_tuple, result_tuple(gt_i, f))
   end
   
+=begin
+  def test_result_tuple_new
+    tree = AVLTree.new
+    tree[15] = [{1 => 2400, :start => 1}]
+    tree[5] = [{1 => 500, :start => 1}]
+    tree[10] = [{1 => 400, :start => 1}]
+    gt_i = [1, 1, 5, tree]
+    f = ["sum", 1]
+    res_tuple = [1, 1, 5, 3300]
+    assert_equal(res_tuple, result_tuple_new(gt_i,f,"c"))
+    res_tuple = [1, 1, 5, 1500]
+    assert_equal(res_tuple, result_tuple_new(gt_i,f,"m"))
+  end
+=end
+  
   def test_get_tree_from_gt
     tree = AVLTree.new
     gt_i = [1, 2, 3, tree]
@@ -59,13 +74,13 @@ class TestTsd < Test::Unit::TestCase
     f = ["sum",1]
     theta=[[0,0]]
     z = [[1, 1, 5, 1500], [1, 6, 10, 1500], [1, 11, 12, 520], [2, 4, 10, 1200], [1, 13, 15, 930], [1, 16, 18, 150], [1, 19, 21, 750], [1, 22, 24, 150], [2, 13, 18, 900]]
-    assert_equal(z, tmdi_ci(g,r,f,theta))
+    assert_equal(z, tmda_ci(g,r,f,theta))
     f = ["count",1]
     z = [[1, 1, 5, 3], [1, 6, 10, 3], [1, 11, 12, 2], [2, 4, 10, 1], [1, 13, 15, 3], [1, 16, 18, 1], [1, 19, 21, 2], [1, 22, 24, 1], [2, 13, 18, 1]]
-    assert_equal(z, tmdi_ci(g,r,f,theta))
+    assert_equal(z, tmda_ci(g,r,f,theta))
     f = ["avg",1]
     z = [[1, 1, 5, 500], [1, 6, 10, 500], [1, 11, 12, 260], [2, 4, 10, 1200], [1, 13, 15, 310], [1, 16, 18, 150], [1, 19, 21, 375], [1, 22, 24, 150], [2, 13, 18, 900]]
-    assert_equal(z, tmdi_ci(g,r,f,theta))
+    assert_equal(z, tmda_ci(g,r,f,theta))
   end
     
 end
