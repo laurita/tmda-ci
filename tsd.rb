@@ -232,13 +232,13 @@ def tmda_ci_new(g,r,f,theta,c)
 end
 #=end
 
-=begin
+#=begin
 require 'sqlite3'
 db = SQLite3::Database.open('data/tsd.db')
-r = db.execute("select * from employee where name = 0")
+r = db.execute("select * from random_02 where name = 0")
 g = [[0]]
 #g = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]]
-=end
+#=end
 
 class AVLTree
   def set_sum(n)
@@ -258,19 +258,11 @@ end
 =begin
 g = [[1], [2]]
 r = [[1, 2400, 1, 15], [1, 600, 19, 21], [1, 500, 1, 5], [1, 1000, 6, 15], [1, 600, 13, 24], [1, 400, 1, 10], [2, 1200, 4, 10], [2, 900, 13, 18]]
+=end
 f = ["count",1]
 theta=[[0,0]]
-puts tmda_ci(g,r,f,theta).inspect
-=end
-g = [[1], [2]]
-r = [[1, 2400, 1, 15], [1, 600, 19, 21], [1, 500, 1, 5], [1, 1000, 6, 15], [1, 600, 13, 24], [1, 400, 1, 10], [2, 1200, 4, 10], [2, 900, 13, 18]]
-f = ["sum",1]
-theta=[[0,0]]
-c = "c"
-puts tmda_ci_new(g,r,f,theta,c).inspect
-
-
-
+c = "m"
+#puts tmda_ci_new(g,r,f,theta,c).inspect
 
 
 
