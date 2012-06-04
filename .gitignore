@@ -1,3 +1,6 @@
 data/*
 TSD_project.tmproj
 UTF-8
+report/*.aux
+report/*.log
+report/*.synctex.gz(busy)
