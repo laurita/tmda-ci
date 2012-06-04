@@ -2,7 +2,7 @@
 $LOAD_PATH.unshift File.dirname(__FILE__)
 
 require 'sqlite3'
-require 'tsd'
+require 'tmda_ci'
 require 'tmda_fi'
 
 def runtimetest()

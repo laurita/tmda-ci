@@ -1,41 +1,42 @@
 --CREATE TABLE Temp AS SELECT name, TS, TE FROM random_02 WHERE;
 
-CREATE TABLE empl_hist (
-empno  INTEGER,
-name INTEGER,
+CREATE TABLE employee (
+name  INTEGER,
+salary INTEGER,
 title  CHAR(20),
 deptno CHAR(3),
-tstart INTEGER,
-tend   INTEGER
+start INTEGER,
+stop   INTEGER
 );
 
-INSERT INTO empl_hist
+INSERT INTO employee
 VALUES(1001, 60000, 'Engineer', 'd01', 01, 06);
-INSERT INTO empl_hist
+INSERT INTO employee
+VALUES(1001, 60000, 'Engineer', 'd01', 03, 08);
+INSERT INTO employee
+INSERT INTO employee
 VALUES(1001, 70000, 'Engineer', 'd01', 06, 10);
-INSERT INTO empl_hist
+INSERT INTO employee
 VALUES(1001, 70000, 'Sr Engineer', 'd02', 10, 14);
-INSERT INTO empl_hist
+INSERT INTO employee
 VALUES (1001, 70000, 'Tech Leader', 'd02', 14, 24);
 
-CREATE TABLE temp AS
-SELECT empno AS name, Tstart AS TS, Tend AS TE
-FROM empl_hist
-WHERE Empno = 1001;
-
-SELECT DISTINCT F.name, F.TS, L.TE 
-FROM Temp AS F, Temp AS L 
-WHERE F.name = L.name AND F.TS < L.TE 
-AND NOT EXISTS(
-  SELECT * 
-  FROM Temp AS M 
-  WHERE M.name = F.name AND F.TS < M.TS AND M.TS < L.TE 
-  AND NOT EXISTS (
-    SELECT * FROM Temp AS T1 
-    WHERE T1.name = F.name AND T1.TS < M.TS AND M.TS <= T1.TE
-  )
-) 
-AND NOT EXISTS(
-  SELECT * FROM Temp AS T2 
-  WHERE T2.name = F.name
-  AND ((T2.TS < F.TS AND F.TS <= T2.TE) OR (T2.TS <= L.TE and L.TE < T2.TE)));
+SELECT E1.Name, E1.Salary, E1.Title, E1.Start, E1.Stop 
+FROM Employee AS E1, Employee AS E2 
+WHERE E1.Name = E2.Name AND E1.Salary = E2.Salary
+  AND E2.Start <= E1.Start AND E1.Stop <= E2.Stop 
+UNION
+SELECT E1.Name, E1.Salary, E1.Title, E1.Start, E2.Stop 
+FROM Employee AS E1, Employee AS E2 
+WHERE E1.Name = E2.Name AND E1.Salary = E2.Salary
+  AND E1.Start > E2.Start AND E2.Stop < E1.Stop AND E1.Start < E2.Stop 
+UNION
+SELECT E1.Name, E1.Salary, E1.Title, E2.Start, E1.Stop 
+FROM Employee AS E1, Employee AS E2 
+WHERE E1.Name = E2.Name AND E1.Salary = E2.Salary
+  AND E2.Start > E1.Start AND E1.Stop < E2.Stop AND E2.Start < E1.Stop 
+UNION
+SELECT E1.Name, E1.Salary, E1.Title, E2.Start, E2.Stop 
+FROM Employee AS E1, Employee AS E2 
+WHERE E1.Name = E2.Name AND E1.Salary = E2.Salary
+  AND E2.Start >= E1.Start AND E2.Stop <= E1.Stop;

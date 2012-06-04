@@ -127,7 +127,7 @@ def tmda_ci(g,r,f,theta,c)
   gt.each do |gt_row|
     get_tree_from_gt(gt_row).sort_by {|entry| entry[0]}.each do |v|
       gt_row[gt_te] = v[0]
-      z << result_tuple_new(gt_row,f,c)
+      z << result_tuple(gt_row,f,c)
       gt_row[gt_ts] = v[0] + 1
       gt_row[gt_te] = "*"
       v[1].each do |tuple|
@@ -142,11 +142,6 @@ end
 
 #=begin
 require 'sqlite3'
-db = SQLite3::Database.open('data/tsd.db')
-r = db.execute("select * from random_02 where name = 0")
-g = [[0]]
-#g = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]]
-#=end
 
 class AVLTree
   def set_sum(n)
@@ -163,14 +158,32 @@ class AVLTree
   end
 end
 
+def main()
+  puts "omg"
+end
+
+def test()
 =begin
+db = SQLite3::Database.open('data/tsd.db')
+r = db.execute("select * from random_02 where name = 0")
+g = [[0]]
+#g = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]]
+=end
+
+
+
+#=begin
 g = [[1], [2]]
 r = [[1, 2400, 1, 15], [1, 600, 19, 21], [1, 500, 1, 5], [1, 1000, 6, 15], [1, 600, 13, 24], [1, 400, 1, 10], [2, 1200, 4, 10], [2, 900, 13, 18]]
-=end
+#=end
 f = ["sum",1]
 theta=[[0,0]]
-c = "c"
-#puts tmda_ci(g,r,f,theta,c).inspect 
+c = "m"
+puts tmda_ci(g,r,f,theta,c).inspect 
+
+end
+
+test()
 
 
 
