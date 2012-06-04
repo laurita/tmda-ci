@@ -140,6 +140,8 @@ def tmda_ci(g,r,f,theta,c)
   z
 end
 
+# Helpers
+
 #=begin
 require 'sqlite3'
 
@@ -158,9 +160,6 @@ class AVLTree
   end
 end
 
-def main()
-  puts "omg"
-end
 
 def test()
 =begin
@@ -170,39 +169,16 @@ g = [[0]]
 #g = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]]
 =end
 
-
-
 #=begin
 g = [[1], [2]]
 r = [[1, 2400, 1, 15], [1, 600, 19, 21], [1, 500, 1, 5], [1, 1000, 6, 15], [1, 600, 13, 24], [1, 400, 1, 10], [2, 1200, 4, 10], [2, 900, 13, 18]]
 #=end
 f = ["sum",1]
-theta=[[0,0]]
-c = "m"
+theta = [[0,0]]
+#theta=[[0,0]]
+c = "c"
 puts tmda_ci(g,r,f,theta,c).inspect 
 
 end
 
-test()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#main()
