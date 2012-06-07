@@ -24,7 +24,7 @@ class OptparseCI
     options[:theta] = []
     
     opts = OptionParser.new do |opts|
-      opts.banner = "Usage: tmda_ci.rb [options]"
+      opts.banner = "Usage: tmda_ci_main.rb [options]"
 
       opts.separator ""
       opts.separator "Specific options:"
@@ -35,12 +35,12 @@ class OptparseCI
       end
       
       opts.on("--group_sql SQL",
-              "Ex. 'SELECT DISTINCT(department) FROM table'") do |gsql|
+              "Ex. 'SELECT DISTINCT name FROM table'") do |gsql|
         options[:group_sql] = gsql
       end
       
       opts.on("--source_sql SQL",
-              "Ex. 'SELECT DISTINCT(department) FROM table'") do |sql|
+              "Ex. 'SELECT * FROM table'") do |sql|
         options[:source_sql] = sql
       end
       

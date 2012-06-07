@@ -24,7 +24,7 @@ def lookup_fi(gt, tuple, theta)
   return lookup
 end
 
-def adjust(tuple, gt_i, c)
+def adjust(tuple, gt_i, f, c)
   gt_start = gt_i.length - 3
   gt_end = gt_i.length - 2
   if (c == "m")
@@ -33,9 +33,17 @@ def adjust(tuple, gt_i, c)
     #puts "start: #{start}"
     finish = [gt_i[gt_end], tuple.last].min
     #puts "finish: #{finish}"
-    gt_i[gt_i.length - 1] += tuple[1] * (finish - start + 1) / (tuple.last - tuple[tuple.length - 2] + 1)
+    if f[0] ==  "sum"
+      gt_i[gt_i.length - 1] += tuple[f[1]] * (finish - start + 1) / (tuple.last - tuple[tuple.length - 2] + 1)
+    elsif f[0] == "count"
+      gt_i[gt_i.length - 1] += (finish - start + 1) / (tuple.last - tuple[tuple.length - 2] + 1)
+    end
   elsif (c == "c")
-    gt_i[gt_i.length - 1] += tuple[1]
+    if f[0] == "sum"
+      gt_i[gt_i.length - 1] += tuple[f[1]]
+    elsif f[0] == "count"
+      gt_i[gt_i.length - 1] += 1
+    end
   end
   gt_i
 end
@@ -46,7 +54,7 @@ def tmda_fi(g,r,f,theta,c)
   r.each do |tuple|
     #puts "tuple: #{tuple}"
     lookup_fi(gt,tuple,theta).each do |i|
-      gt[i] = adjust(tuple,gt[i],c)
+      gt[i] = adjust(tuple,gt[i],f,c)
       #puts gt[i].inspect
     end  
   end
@@ -71,7 +79,7 @@ r = [
      [1, 2400, 1, 15], [1, 600, 19, 21], [1, 500, 1, 5], [1, 1000, 6, 15],
      [1, 600, 13, 24], [1, 400, 1, 10], [2, 1200, 4, 10], [2, 900, 13, 18]
     ]
-f = "sum"
+f = ["sum", 1]
 
 theta = [0, 0]
 c = "m"

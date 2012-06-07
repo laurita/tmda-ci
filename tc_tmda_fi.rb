@@ -27,8 +27,9 @@ class TestTsd < Test::Unit::TestCase
     tuple = [1, 2400, 1, 15]
     gt_i = [1, 1, 12, 0]
     c = "m"
+    f = ["sum", 1]
     r_prime = [1, 1, 12, 1920]
-    assert_equal(r_prime, adjust(tuple, gt_i, c))
+    assert_equal(r_prime, adjust(tuple, gt_i, f, c))
   end
   
   def test_tmda_fi
@@ -37,7 +38,7 @@ class TestTsd < Test::Unit::TestCase
          [1, 2400, 1, 15], [1, 600, 19, 21], [1, 500, 1, 5], [1, 1000, 6, 15],
          [1, 600, 13, 24], [1, 400, 1, 10], [2, 1200, 4, 10], [2, 900, 13, 18]
         ]
-    f = "sum"
+    f = ["sum", 1]
     theta = [0, 0]
     c = "m"
     result = [[1, 1, 12, 3520], [1, 13, 24, 1980], [2, 1, 12, 1200], [2, 13, 24, 900]]
