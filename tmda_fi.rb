@@ -4,13 +4,10 @@ NegInfinity = -1.0/0
 
 def tmda_fi(g,r,f,theta,c)
   gt = init_gt_fi(g)
-  #puts "gt: #{gt.inspect}"
   index = create_index(gt)
   r.each do |tuple|
-    #puts "tuple: #{tuple}"
     index_lookup(index,tuple,theta).each do |i|
       gt[i] = adjust(tuple,gt[i],f,c)
-      #puts gt[i].inspect
     end  
   end
   gt
@@ -22,11 +19,8 @@ def adjust(tuple, gt_i, f, c)
   gt_start = gt_i.length - 3
   gt_end = gt_i.length - 2
   if (c == "m")
-    #puts "tuple: #{tuple.inspect}"
     start = [gt_i[gt_start], tuple[tuple.length - 2]].max
-    #puts "start: #{start}"
     finish = [gt_i[gt_end], tuple.last].min
-    #puts "finish: #{finish}"
     if f[0] ==  "sum"
       gt_i[gt_i.length - 1] += tuple[f[1]] * (finish - start + 1) / (tuple.last - tuple[tuple.length - 2] + 1)
     elsif f[0] == "count"

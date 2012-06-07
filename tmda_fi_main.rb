@@ -13,11 +13,7 @@ def main()
   f = [options[:func], options[:func_arg]]
   theta = options[:theta]
   c = options[:c]
-  start_time = Time.now
-  result = tmda_fi(g,r,f,theta,c)
-  duration = Time.now - start_time
-  puts result.inspect
-  puts "Calculation took #{duration} seconds."
+  puts tmda_fi(g,r,f,theta,c).inspect
 end
 
 class OptparseCI
