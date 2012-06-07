@@ -10,7 +10,7 @@ class TestTsd < Test::Unit::TestCase
     tuple1 = [1, 2400, 1, 15]
     tuple2 = [1, 500, 1, 5]
     gt = [[1, 1, 12, 0], [1, 13, 24, 0], [2, 1, 12, 0], [2, 13, 24, 0]]
-    theta = [0, 0]
+    theta = [[0, 0]]
     looked_up_rows1 = [0, 1]
     looked_up_rows2 = [0] 
     assert_equal(looked_up_rows1, lookup_fi(gt, tuple1, theta))
@@ -39,7 +39,7 @@ class TestTsd < Test::Unit::TestCase
          [1, 600, 13, 24], [1, 400, 1, 10], [2, 1200, 4, 10], [2, 900, 13, 18]
         ]
     f = ["sum", 1]
-    theta = [0, 0]
+    theta = [[0, 0]]
     c = "m"
     result = [[1, 1, 12, 3520], [1, 13, 24, 1980], [2, 1, 12, 1200], [2, 13, 24, 900]]
     assert_equal(result, tmda_fi(g,r,f,theta,c))

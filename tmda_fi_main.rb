@@ -7,15 +7,17 @@ require 'pp'
 
 def main()
   options = OptparseCI.parse(ARGV)
-  
   db = SQLite3::Database.open(options[:db])
   g = db.execute(options[:group_sql])
   r = db.execute(options[:source_sql])
   f = [options[:func], options[:func_arg]]
   theta = options[:theta]
   c = options[:c]
-  
-  puts tmda_fi(g,r,f,theta,c).inspect 
+  start_time = Time.now
+  result = tmda_fi(g,r,f,theta,c)
+  duration = Time.now - start_time
+  puts result.inspect
+  puts "Calculation took #{duration} seconds."
 end
 
 class OptparseCI

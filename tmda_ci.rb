@@ -1,69 +1,6 @@
 require "avl_tree"
 
 NegInfinity = -1.0/0
-def sort(list_to_sort, by_arg)
-  list_to_sort.sort_by {|list| list[by_arg]}
-end
-
-def init_gt(g)
-  gt = g.map {|list| list.first(list.length).push(NegInfinity).push("*")}
-  gt.map {|list| list << AVLTree.new}
-end
-
-# gt=group table, row=tuple from original table, theta=list of join conditons
-def lookup(gt, row, theta)
-  lookup = []
-  gt.each_with_index do |row_gt, index| 
-    if theta.all? {|cond| row_gt[cond[0]] == row[cond[1]]}
-      lookup.push(index)
-    end
-  end
-  return lookup
-end
-
-def get_tree_from_gt(gt_i)
-  gt_i.last
-end
-
-def result_tuple(gt_i,f,c)
-  length = gt_i.length
-  tree = get_tree_from_gt(gt_i)
-  gt_te = gt_i[length - 2]
-  gt_ts = gt_i[length - 3]
-  final_sum = 0
-  count = 0
-  if c == "c"
-    count = (tree.get_count != nil) ? tree.get_count : 0
-    final_sum = (tree.get_sum != nil) ? tree.get_sum : 0
-  elsif c == "m"
-    tree.entries.each do |entry|
-      if entry[0] > gt_ts
-        node_end = entry[0]
-        entry[1].each do |value|
-          if not value.empty?
-            node_value_start = value[:start]
-            row_sum = value[f[1]] * (gt_te - gt_ts + 1) / (node_end - node_value_start + 1)
-            final_sum += row_sum
-            count += 1 
-          end
-        end
-      end
-    end
-  end
-  if count != 0
-    if f[0] == "sum"
-      result_tuple = gt_i.first(length-1).push(final_sum)
-    elsif f[0] == "count"
-      result_tuple = gt_i.first(length-1).push(count)
-    elsif f[0] == "avg"
-      result_tuple = gt_i.first(length-1).push(final_sum / count)
-    end
-  else
-    result_tuple = nil
-  end
-  result_tuple 
-end
-
 
 def tmda_ci(g,r,f,theta,c)
   z = []
@@ -140,10 +77,71 @@ def tmda_ci(g,r,f,theta,c)
   z
 end
 
-# Helpers
+# HELPERS:
 
-#=begin
-require 'sqlite3'
+def result_tuple(gt_i,f,c)
+  length = gt_i.length
+  tree = get_tree_from_gt(gt_i)
+  gt_te = gt_i[length - 2]
+  gt_ts = gt_i[length - 3]
+  final_sum = 0
+  count = 0
+  if c == "c"
+    count = (tree.get_count != nil) ? tree.get_count : 0
+    final_sum = (tree.get_sum != nil) ? tree.get_sum : 0
+  elsif c == "m"
+    tree.entries.each do |entry|
+      if entry[0] > gt_ts
+        node_end = entry[0]
+        entry[1].each do |value|
+          if not value.empty?
+            node_value_start = value[:start]
+            row_sum = value[f[1]] * (gt_te - gt_ts + 1) / (node_end - node_value_start + 1)
+            final_sum += row_sum
+            count += 1 
+          end
+        end
+      end
+    end
+  end
+  if count != 0
+    if f[0] == "sum"
+      result_tuple = gt_i.first(length-1).push(final_sum)
+    elsif f[0] == "count"
+      result_tuple = gt_i.first(length-1).push(count)
+    elsif f[0] == "avg"
+      result_tuple = gt_i.first(length-1).push(final_sum / count)
+    end
+  else
+    result_tuple = nil
+  end
+  result_tuple 
+end
+
+# gt=group table, row=tuple from original table, theta=list of join conditons
+def lookup(gt, row, theta)
+  lookup = []
+  gt.each_with_index do |row_gt, index| 
+    if theta.all? {|cond| row_gt[cond[0]] == row[cond[1]]}
+      lookup.push(index)
+    end
+  end
+  return lookup
+end
+
+def sort(list_to_sort, by_arg)
+  list_to_sort.sort_by {|list| list[by_arg]}
+end
+
+def init_gt(g)
+  gt = g.map {|list| list.first(list.length).push(NegInfinity).push("*")}
+  gt.map {|list| list << AVLTree.new}
+end
+
+def get_tree_from_gt(gt_i)
+  gt_i.last
+end
+
 
 class AVLTree
   def set_sum(n)
@@ -159,26 +157,3 @@ class AVLTree
     @count
   end
 end
-
-
-def test()
-=begin
-db = SQLite3::Database.open('data/tsd.db')
-r = db.execute("select * from random_02 where name = 0")
-g = [[0]]
-#g = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]]
-=end
-
-#=begin
-g = [[1], [2]]
-r = [[1, 2400, 1, 15], [1, 600, 19, 21], [1, 500, 1, 5], [1, 1000, 6, 15], [1, 600, 13, 24], [1, 400, 1, 10], [2, 1200, 4, 10], [2, 900, 13, 18]]
-#=end
-f = ["sum",1]
-theta = [[0,0]]
-#theta=[[0,0]]
-c = "c"
-puts tmda_ci(g,r,f,theta,c).inspect 
-
-end
-
-#main()
