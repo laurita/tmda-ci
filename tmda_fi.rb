@@ -5,9 +5,10 @@ NegInfinity = -1.0/0
 def tmda_fi(g,r,f,theta,c)
   gt = init_gt_fi(g)
   #puts "gt: #{gt.inspect}"
+  index = create_index(gt)
   r.each do |tuple|
     #puts "tuple: #{tuple}"
-    lookup_fi(gt,tuple,theta).each do |i|
+    index_lookup(index,tuple,theta).each do |i|
       gt[i] = adjust(tuple,gt[i],f,c)
       #puts gt[i].inspect
     end  
@@ -39,6 +40,19 @@ def adjust(tuple, gt_i, f, c)
     end
   end
   gt_i
+end
+
+def create_index(gt)
+  index = AVLTree.new
+  gt.each_with_index do |row, i|
+    index[row] = i
+  end
+  index
+end
+
+def index_lookup(index, tuple, theta)
+  indexes = []
+  index.find_all{|node| theta.all? {|cond| node[0][cond[0]] == tuple[cond[1]]} and node[0][1]  <= tuple.last and node[0][2] >= tuple[tuple.length - 2]}.collect{|x| x[1]}
 end
 
 def init_gt_fi(g)
