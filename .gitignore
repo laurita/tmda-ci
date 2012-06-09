@@ -5,3 +5,4 @@ report/*.aux
 report/*.log
 report/*.synctex.gz(busy)
 .DS_Store
+report/report.synctex.gz

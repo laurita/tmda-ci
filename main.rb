@@ -5,6 +5,7 @@ require 'sqlite3'
 require 'tmda_ci'
 require 'tmda_fi'
 
+#=begin
 def runtimetest()
   db = SQLite3::Database.open('data/tsd.db')
   g = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]]
@@ -17,8 +18,9 @@ def runtimetest()
     puts "MALLABLE ATTRIBUTES"
   end
   #data_size = [2, 4, 6, 8, 10]
-  data_size = [10]
+  data_size = [2, 10]
   #data_type = ["equal", "seq", "random", "worst"]
+  #data_type = ["random"]
   data_type = ["worst"]
   times = {}
   data_type.each do |type| 
@@ -29,7 +31,9 @@ def runtimetest()
       size = 100000 * i
       puts "Testing for size #{size}..."
       start_time = Time.now
-      tmda_ci_new(g,r,f,theta,c).inspect
+      res = tmda_ci(g,r,f,theta,c)
+      af = res.length.to_f / r.length
+      puts "af: #{af}"
       duration = Time.now - start_time
       times[type][size] = duration
       puts "TMDA-CI took #{duration} seconds with data of #{size}"
@@ -37,7 +41,7 @@ def runtimetest()
   end
   times
 end
-
+#=end
 =begin
 def runtimetest()
   db = SQLite3::Database.open('data/tsd.db')
@@ -46,8 +50,8 @@ def runtimetest()
        [4, 1, 500], [4, 501, 1000], [5, 1, 500], [5, 501, 1000], 
        [6, 1, 500], [6, 501, 1000], [7, 1, 500], [7, 501, 1000], 
        [8, 1, 500], [8, 501, 1000], [9, 1, 500], [9, 501, 1000]]
-  f = "sum"
-  theta = [{:r_col_nr => 0, :gt_attr_name => :attr}]
+  f = ["sum", 1]
+  theta = [0, 0]
   c = "c"
   if c == "m"
     puts "CONSTANT ATTRIBUTES"

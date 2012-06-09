@@ -4,6 +4,9 @@
 %
 \usepackage{graphicx,amssymb,amstext,amsmath}
 \usepackage{url}
+\usepackage{fancybox}
+\usepackage[normal]{subfigure}
+
 %
 %%    homebrew commands -- to save typing
 \newcommand\etc{\textsl{etc}}
@@ -24,244 +27,138 @@
 \author{Laura Bledaite}
 \maketitle
 
-\begin{abstract}
-Required or not?
-\end{abstract}
-
 \section{Introduction}
 
-When integrating data from different sources, the exact matches of data items representing the same real world object fail very often because of the missing global keys and/or different data representations. The solution is the approximate matching techniques. In this project we discuss different techniques to match two groups of objects using a similarity matrix. Each object can be matched exactly once and matching is a symmetric property. This matching problem is of interest in a number of areas.
+The objective of this project was to analyze the extension of the multi-dimensional aggregation applied to the data with associated interval values that capture when the data hold. This report describes the Temporal Multi-Dimensional Aggregation (TMDA) operator proposed in~\cite{bohlen} that addresses several challenges posed by interval data. It also reports on an implementation of the operator, on an empirical analysis and compares the results of an empirical study with the ones got in~\cite{bohlen}.
 
-% do we want to add examples here (?)
-We implement and compare four matching algorithms: Reverse Nearest Neighbor, Global Greedy, Stable Marriage, and the Hungarian Algorithm. 
-The differences of the matching algorithms are then discussed by performing runtime and quality tests using our implementation. For the runtime tests we generate random matrices and for the quality test we use real-world data. In the last part we further clarify the differences by looking at particular, hand-crafted matrices.
+Further the report is structured as follows. In the second section the necessary notation is introduced. In the third section the operator is described and the implementation of two algorithms of the TMDA operator is reported. The fourth section presents the experimental results and their comparison with the results of the previous study. The final section draws the conclusions and suggests future work.
 
-% The main objective is to match similar strings based on their distances. Possible applications include object identification in different databases, error correction in the text, finding matches for the queries with a spelling mistake \etc.
+\section{Notation}
+
+It is worth mentioning that all the notation is taken from~\cite{bohlen} and therefore most of the theoretical part is a repetition. The reason of the decision to include it in the report is the necessity of the notation in order to present and discuss the algorithms further on.
  
-% The comparison of algorithms include runtime and quality tests. In our runtime tests we use randomly generated distance data of different sizes, namely: 10, 100, 1000. In the quality tests, we use Bolzano Address Tree distance data and compute recall and precision for all the algorithms.
+A discrete \textit{time domain}, $D^{T}$, is assumed here, where the elements are termed time points, following a total order $<^{T}$ . Calendar months with the order $<$ satisfy these requirements, and they are used as a time domain in this report. A timestamp (or time interval) is represented by two chronons, $[T_s, T_e ]$, denoting its inclusive start- and end- points, respectively. $T$ is used as a shorthand for $[T_s, T_e ]$. For timestamps, several relations are introduced: $t \in T$ means that the time point $t$ is included in the interval $T$. For two timestamps $T$ and $T^{'}$, $T^{'} \subseteq T$ iff all time points in $T^{'}$ are also in $T$ , and $T \cap T^{'}$ returns the set of time points in both timestamps. If $T \cap T^{'} \neq \emptyset$, the two intervals are said to overlap.
 
-\section{Algorithms}
+A \textit{relation schema} is a three-tuple $S = (\Omega, \Delta, dom)$, where $\Omega$ is a non-empty, finite set of attributes, $\Delta$ is a finite set of domains, and $dom: \Omega \rightarrow \Delta$ is a function that associates a domain with each attribute. A temporal relation schema is a relation schema with at least one timestamp valued attribute (the domain of timestamps belongs to $\Delta$). For the purpose of~\cite{bohlen} the temporal relation schemas $R = (A_1, \dots ,A_n,T)$ and $G = (B_1, \dots ,B_m,T)$ were defined and here the definition are borrowed as well. The assumption that relations have a timestamp attribute $T$ was introduced just for convenience. There is no implicit time attribute, and all definitions are parametrized with a timestamp attribute. As usual, the rename operator $\rho$ can be used to adjust schemas as appropriate.
 
-\subsection{Reverse Nearest Neighbor}
+A \textit{tuple over schema} $S = (\Omega, \Delta, dom)$ is a function $r: \Omega \rightarrow \bigcup_{\delta \in \Delta} \delta$, such that for every attribute $A$ of $\Omega$, $r(A) \in dom(A)$. A tuple is temporal iff its schema is temporal. To simplify notation an ordering of attributes is assumed and represented as a tuple $r = (v_1, \dots ,v_n,t)$. A relation over schema $R$ is a finite set of tuples over $R$, denoted as $r$. A couple of shorthands are also used: For a tuple $r$ and an attribute $A$ $r.A$ denotes the value of the attribute $A$ in $r$. For a set of attributes $A_1, \dots , A_m, m < n$, $r[A_1, \dots ,A_m] = (r.A_1, \dots,r.A_m)$.
 
-The Reverse Nearest Neighbor algorithm is the only algorithm that does not match as many objects as possible.
-An object $A$ is only matched to object $B$ if the object $A$ is unique, most similar object to $B$ and vice versa. In other words the matrix entry for $AB$ is the unique, smallest entry in this row and column.
+Three semantics of the association of a non-timestamp attribute with a timestamp attribute are distinguished. For a relation with schema $(A_1, \dots ,A_n,T)$ the attribute characteristics wrt.	$T$ are	given as $CT=	(c_1, \dots , c_n)$, where $c_i \in \{c, m, a\}$. The values $c$, $m$, and $a$ denote constant, malleable, and atomic characteristics, respectively. For example, $CT= (c,m)$ for the schema $(N,H,T)$ means that $N$ has a constant characteristic and $H$ has a malleable characteristic. If several temporal attributes are used, e.g., valid time and transaction time, a non-timestamp attribute can have different characteristics for the two timestamps. In the original paper and also in this report, only one time attribute $T$ is used, and $C$ refers to the characteristics wrt. $T$.
 
-The formalized details of the algorithm can be found in \cite[p. 29]{rnn}.
+%Definition1. (AdjustmentofAttributeValues)Letr=(v1,...,vn,t)beatupleover schema (A1,...,An,T), I be a timestamp, and let C = (c1,...,cn) be the attribute characteristics. The adjustment of attribute values is defined as follows:
+%adj(r,I,C) = (adj(r.A1,r.T,I,c1),...,adj(r.An,r.T,I,cn),I)
+% v	i f f c = ’ c ’ adj(v,T,I,c)=v∗|I∩T|/|T| iff c=’m’
+%  v	i f f c = ’ a ’ ∧ T = I UNDEF	iff c=’a’∧T ̸=I
+
+Considering the characteristics $C$, the $adj$ function adjusts each non-timestamp attribute value of $r$ to the time interval $I$ and returns the adjusted tuple. For example, for the tuple (Jan , 2000, [2003/01, 2003/12]), the characteristics $(c, m)$, and the time interval [2003/01, 2003/06] the $adj$ function returns (Jan , 1000, [2003/01, 2003/06]).
+
+\section{Implementation of TMDA Operator}
+
+The TMDA operator has two aspects of general temporal aggregation. First one is a case when the timestamp attribute assumes as values the maximal, non-overlapping intervals over which the set of argument tuples is constant. These intervals are called \textit{constant intervals} and they are calculated along with the computation of the aggregate functions while scanning the tuples of the argument relation $r$. The second case is when the result groups with the fixed intervals for which to calculate the aggregate functions are specified in advance and provided as input for the algorithm. These intervals are called \textit{fixed intervals}. 
+
+The implementation of the TMDA operator for constant intervals is based on the following observation: if we scan the argument relation, which is ordered by the interval start values of the tuples, we can at any time point $t$ compute the result tuples that end before $t$ (assuming that no tuples that start after $t$ contribute to these result tuples). Hence, as the argument relation is being scanned, result tuples are produced, and old tuples are removed from main memory. Only the tuples that are valid at time point $t$, termed open tuples, are kept in main memory.
+
+For the use with fixed intervals, the timestamps of the result tuples are specified in the group relation. So, we do not need to maintain the data tuples in main memory, but can process them and update the aggregate values as we scan the data relation.
+
+In the rest of this section two algorithms for the evaluation of TMDA with constant intervals and fixed intervals, respectively, are described, the differences between the implementation suggested in the original paper are pointed.
+
+\subsection{The TMDA-CI Algorithm for Constant Intervals}
+
+
   
-\subsection{Global Greedy}
-
-% string -> object
-The Global Greedy algorithm first sorts all possible matches ascending by similarity. It then iterates through the pairs and matches a pair if possible. A pair can be matched if there exists no other match using the same row or column.
-
-This algorithm matches as many strings as possible, i.e min(\#rows, \#columns). Therefore, it would match even very different strings, if there are no better matches left. The algorithm yields a stable matching, which is proven in \cite{augsten}.
-
-%The Global Greedy algorithm initially sorts the string pairs by their distance and stores them in an array. In the beginning the closest string pair is matched. The respective row and column are marked in the distance matrix to avoid a situation that a string is matched twice. The remaining string pairs in an array are matched in ascending order of their distances if both strings in the pair are still available. This algorithm matches as many strings as possible, i.e $min(\#rows, \#columns)$. Therefore, it would match even very different strings, if there are no better matches left. The algorithm yields a stable matching, which is proven in \cite{augsten}.
-
-The Global Greedy matching algorithm requires $O(N^2)$ space (the size of the distance matrix) and runs in $O(N^2 log(N))$ time (sorting the distances).
-
-\subsection{Stable Marriage}
-
-% string -> object
-The Stable Marriage algorithm was first presented in \cite{gale}. One of the application examples was the assignments of students to the colleges given a quota for each college and the preferential rankings of both sides. The special case of a problem, when there is the same number of studends and colleges and all the quotas are unity was explained as a situation when the equal number of men and women seek for a partner based on their ranking lists.
-
-The latter case is readily applicable for the string matching problem. The difference is that for matching strings the input is a distance matrices. Therefore, to use the algorithm the row-wise and column-wise rankings of the distances have to be calculated (the smaller the distance, the better the ranking).
-
-Further, the algorithm is identical to the original stable marriage. Suppose, that there are less columns than rows in the distence matrix. If not, then transpose the distance matrix and follow the same procedure. Also, imagine that rows represent boys, and columns represent girls. To start, each boy finds its best ranked girl. Each girl who receives more than one proposal rejects all but her favorite from among those who have proposed to her. However, she does not accept him yet, but keeps him on a string to allow for the possibility that someone better may come along later.
-
-In the second stage those boys who were rejected now propose to their second choices. Each girl receiving proposals chooses her favorite from the group consisting of the new proposers and the boy on her string, if any. She rejects all the rest and again keeps the favorite in suspense.
-
-We proceed in the same manner. Those who are rejected at the current stage propose to their next choices, and the girls again reject all but the best proposal they have had so far.
-
-%\textit{//Can be proven that it terminates?}
-One question regarding the Stable Marriage algorithm is whether it can be proven that the algorithm terminates. Once a girl receives a proposal, she remains engaged, but may chenge her mind for a better proposal. Therefore, from the girls' point of view this algorithm is greedy. In every iteration a boy will eliminate one of his choices. As a result, if it continues for long enough, at some point there will be no girls left to propose. Therefore, at the end $min(\#girls, \#boys)$, i.e. the maximum number of pairs, will be matched and the algorithm terminates.
+\subsection{The TMDA-FI Algorithm for Fixed Intervals}
 
 
-\subsection{Hungarian Algorithm}
 
-The algorithm was first published in \cite{ha_firstpub}.
 
-The basic idea is to assign the objects in such a way that the overall cost of all assignments is minimal, e.g. the sum of all used similarity values is minimal. This means that an object is not assigned to it's best match if the overall cost of all assignments can be reduced that way. The algorithm further matches as many pairs as possible.
-
-% I use capital N, because later I say that N is max(n,m)
-Our implementation, which runs in $O(N^4)$, is loosely based on the original algorithm and  \url{http://csclab.murraystate.edu/bob.pilgrim/445/munkres.html}. It is known that the algorithm can be implemented to run in $O(N^3)$, but for us the (well studied) original algorithm was sufficient.
-
-The details of the algorithm are not described here. However the basic idea is to decrease the size of the entries in the cost matrix in an intelligent way. When the algorithm terminates, there is a marked zeros for every match. 
 
 \section{Experiments}
 
-The comparison of the algorithms includes runtime and quality tests. In our runtime tests we use randomly generated distance data of increasing size. In the quality tests, we use Bolzano Address Tree distance data and compute recall and precision for all four algorithms.
+The experiments carried out with the TMDA-CI and TMDA-FI algorithms include the runtime tests for various settings. All experiments were run on an Intel Core 2 Duo personal computer with a 2.4 GHz processor and 2 GB memory.
 
-\subsection{Runtime Tests}
+The data sets used for experiments contain the number of tuples ranging from 200,000 to 1,000,000. As in~\cite{bohlen}, the lifespan of the data relations is $[0,2^{25}]$ and the following types of the data are used for analysis:
+\begin{itemize}
+\item
+$r^{equal}$: All tuples have the same timestamp; $af \in [0.000001, 0.000005]$.
+\item
+$r^{seq}$: Sequential tuples with one open tuple at each time instant; $af=1$.
+\item
+$r^{random}$: Start time and duration of the tuples are uniformly distributed in $[0,1200]$ and $[1,1200]$, respectively, with 50153 open tuples on average; $af \in [0.023857, 0.11649]$. In the original paper the random data used was noticeably different. Start time and duration of the tuples were uniformly distributed in $[0,225]$ and $[1,4000]$, respectively, with 33 open tuples on average; $af \in [1.940553, 1.987989]$.
+\item
+$r^{worst}$: All start and end points are different, and there is a constant interval (in the
+middle) where all tuples are open; $af \in [1.999995, 1.999999]$.
+\end{itemize}
 
-In all graphs in this section the y-axis ($n$) represents the size of a $n \times n$ test-matrix. The matrix is generated using random double values as entries. We use a logarithmic scale for easier interpretation.
+Here the \textit{aggregation factor} $(af)$ is defined as follows:
 
-\subsubsection{Reverse Nearest Neighbor}
+Definition 4. (Aggregation factor) The aggregation factor of a temporal aggregation operator is defined as the ratio between the cardinality of the result relation $z$ and the cardinality of the argument relation $r$, i.e., $af = \frac{|z|}{|r|}$.
 
-\begin{figure}[ht!]
-\centering 
-\includegraphics[width=80mm]{RNN_runtime.png}
-\caption{The running time of the Reverse Nearest Neighbor algotithm fitted to $x^2$.}
-\label{rnn} 
-\end{figure}
-
-The blue graph in Figure~\ref{rnn} represents the runtime of our RNN implementation. The orange curve is a fitted $x^2$ function. As expected, the complexity of the algorithm is $O(N^{2})$.
-
-\subsubsection{Global Greedy}
-
-\begin{figure}[ht!]
-\centering 
-\includegraphics[width=80mm]{GG_runtime.png}
-\caption{The running time of the Global Greedy algotithm fitted to $x^2 \cdot log(x)$.}
-\label{gg} 
-\end{figure}
-
-The blue graph in Figure~\ref{gg} represents the runtime of our GG implementation. The orange curve is a fitted $x^2 \cdot log(x)$ function. As expected, the complexity of the algorithm is $O(N^{2} \cdot log(N))$, which comes from sorting the distances.
-
-\subsubsection{Stable Marriage}
+One more note about the random data set. The distribution is not random from the point of view of the number of open tuples. The randomness is in the start time and duration, therefore the number of open tuples is always small in the beginning and in the end and very high in the middle of the interval. Figure~\ref{open_tuples} shows the distribution of the number of open tuples depending on the time point. 
 
 \begin{figure}[ht!]
 \centering 
-\includegraphics[width=80mm]{SM_runtime.png}
-\caption{The running time of the Stable Marriage algotithm fitted to $x^2 \cdot log(x)$.}
-\label{sm} 
+\includegraphics[width=80mm]{../graphs/random_open_tuples.pdf}
+\caption{The distribution of the number of open tuples in the random data set.}
+\label{open_tuples} 
 \end{figure}
 
-The blue graph in Figure~\ref{sm} represents the runtime of our Stable Marriage algotithm implementation. The orange curve is a fitted $x^2 \cdot log(x)$ function. As expected, the complexity of the algorithm is $O(N^{2} \cdot log(N))$, which comes from the rowwise and columnwise rankings. If the distance matrix is $n$x$m$, then to sort one row it takes $m \cdot log(m)$ time. Similarly, to sort one column, it takes $n \cdot log(n)$ time. Therefore, the sorting takes $m \cdot n \cdot log(n) + n \cdot m \cdot log(m)$. Thus, if we denote the maximum of $n$ and $m$ by $N$, the time required for sorting is $O(N^{2} \cdot log(N))$. Because the complexity of the original algorithm was proven to be $N^{2}$, the application of such a problem to this particular case adds some complexity, which is, on the other hand, very negligible.
+\subsection{Scalability of TMDA-CI and TMDA-FI}
 
-\subsubsection{Hungarian Algorithm}
+The first experiment investigates the scalability of both algorithms: TMDA-CI and TMDA-FI. Figure~\ref{constant_tmda_ci} shows the dependency of the TMDA-CI algorithm on the size of the input relation and the type of the data which is related to the aggregation factor.
+
+The results of the experiment confirm the results of the study carried out by the authors of~\cite{bohlen}. The running times are just negligibly higher than theirs. The difference noticed is in the runtime of the algorithm on $r^{random}$ and the reason is clearly the different data set used.
+
+Relation $r^{worst}$ always has the most open tuples possible and the maximal aggregation factor. For constant intervals it is the only data set from all the used ones that makes the algorithm run in quadratic running time in the size of the input relation. The running time for all the other data sets is linear. Relation $r^{equal}$ with a very small aggregation factor has the smallest running time. Even though the number of open tuples is th ehighest possible, i.e. all tuples from the input relation, they are scanned only once. This makes the algorithm very fast.
+
+For the TMDA-FI algorithm the key parameter that is affecting performance is the number of the result groups stated before the algorthm is started. The performance of TMDA-FI is shown in Figure~\ref{constant_tmda_fi}. In this experiment the results are slightly differet than the authors'. The reason for it is most likely the simper implementation of the algorithm. In our implemetation the index is created using AVL-tree on all the grouping attributes $(B_1,\dots,B_m,T)$. In the experiments only one grouping attribute is used. Therefore, the index is created on $(B,T)$, where $T = [T_s, T_e ]$. Because of the index on multiple attributes, the algorithm becomes noticeably slower. Still, the complexity seems to remain the same.
+
+\begin{figure}[ht!]
+	\begin{center}
+		\subfigure[constant intervals]{\label{constant_tmda_ci}\includegraphics[width=0.4\textwidth]{../graphs/constant_tmda_ci.pdf}}
+		\subfigure[fixed intervals]{\label{constant_tmda_fi}\includegraphics[width=0.4\textwidth]{../graphs/tmda_fi_scalability.pdf}}
+	\end{center}
+	\caption{Evaluation of TMDA-CI and TMDA-FI.}
+	\label{scalability}
+\end{figure} 
+
+Figure~\ref{mal_vs_const} show the impact of the attribute characteristics on the performance of the TMDA-CI algorithm. Figure~\ref{mal_vs_const_equal}, Figure~\ref{mal_vs_const_seq} and Figure~\ref{mal_vs_const_random} show the increase of the running time when the result values have to be adjusted for the malable attributes for equal, sequential and random data types respectively. The results suggest that the higher the aggregation factor, the stronger the impact on the runtime of the algorithm, because for each constant interval the algorithm must adjust the result. Thus, the more there are constant intervals, the higher the running time and the impact for the runtime of the same algorithm with the same data just for constant attribute semantics.
+
+\begin{figure}[ht!]
+	\begin{center}
+		\subfigure[equal]{\label{mal_vs_const_equal}\includegraphics[width=0.3\textwidth]{../graphs/mal_vs_const_equal.pdf}}
+		\subfigure[sequential]{\label{mal_vs_const_seq}\includegraphics[width=0.3\textwidth]{../graphs/mal_vs_const_seq.pdf}}
+		\subfigure[random]{\label{mal_vs_const_random}\includegraphics[width=0.3\textwidth]{../graphs/mal_vs_const_random.pdf}}
+	\end{center}
+	\caption{Comparison of TMDA-CI runtime with mallable and constant attribute characteristics.}
+	\label{mal_vs_const}
+\end{figure} 
+
+\subsection{Constant Versus Fixed Intervals}
+
+Figure~\ref{sql_tmda_fi} compares the results of two different ways to compute the aggregates with constant interval semantics. One way is simply to run the TMDA-CI algorithm. The other way consists of two steps: (1) precomputation of constant intervals using SQL and (2) running the TMDA-FI algorithm. The results strongly confirm that the TMDA-CI is by far more efficient than the SQL-CI + TMDA-FI. The same results were acquired by the authors. In fact, in our experiment the difference between TMDA-CI and SQL-CI + TMDA-FI is actually much bigger. The reason for that is again the different implementation of TMDA-FI (not sufficiently efficient index) and also the different DBMS used for constant interval precomputation. The authors of the algorithms used Oracle and in this project SQLite3 was used, which as could be expected was much slower.
 
 \begin{figure}[ht!]
 \centering 
-\includegraphics[width=80mm]{HA_runtime.png}
-\caption{The running time of the Hungarian algotithm fitted to $x^4$.}
-\label{hung} 
+\includegraphics[width=80mm]{../graphs/sql_tmda_fi.pdf}
+\caption{Constant vs Fixed Interval Semantics.}
+\label{sql_tmda_fi} 
 \end{figure}
-
-The blue graph in Figure~\ref{hung} represents the runtime of our HA implementation. The orange curve is a fitted $x^4$ function. As expected, the complexity of the algorithm is $O(n^{4})$. Even if it was mentioned in the before that it is possible to implement the Hungarian Algorithm in $O(n^{3})$, our experimants with the implementation that claimed to achieve $O(n^{3})$, did not prove to do it.
-
-The higher complexity compared to the other matching algorithms is because the Hungarian algorithm aims to assign the objects in such a way that the overall cost of all assignments is minimal, i.e. to find the optimal solution, whereas the others do not ensure it. This strong charasteristic of the solution again comes with its cost - the noticeably higher complexity.
-
-\subsubsection{Comparison of the Running Times}
-The results of the runtime experiment are provided in Table~\ref{runtimes}. It is clearly seen that because of its simplicity and the early exclusion of nonunique best matches, the Reverse Nearest Neighbour algorithm is the fastest one. The Global Greedy and the Stable Marriage algorithms are noticeably slower. One of the reasons is that the job they are performing differs a bit from the task the RNN is doing. GG and SM are making as many matches as possible, even when there are nonunique smallest distances. They both simply pick one of the possible matches. Moreover, GG and SM ensure the stable matching wi=hich comes with a cost. These two algorithms are comparable because of the stability of their solutions.
-
-\begin{table}[tbh]
-\centering
-\begin{tabular}{|c|c|c|c|c|}
-\hline 
-Size & RNN & Global Greedy & Stable Marriage & Hungarian \tabularnewline
-\hline 
-\hline 
- 100 & 1 & 63 &  & 269\tabularnewline
-\hline
- 200 & 2 & 159 &  & 640\tabularnewline
-\hline 
- 300 & 0 & 90 &  & 1826\tabularnewline
-\hline 
- 400 & 0 & 368 & & 5243\tabularnewline
-\hline 
- 500 & 2 & 235 &  & 11415\tabularnewline
-\hline 
- 600 & 4 & 276 &  & 26197\tabularnewline
-\hline 
- 700 & 5 & 440 &  & 43786\tabularnewline
-\hline
- 800 & 8 & 961 &  & 85837\tabularnewline
-\hline 
- 900 & 11 & 1269 &  & 135179\tabularnewline
-\hline
- 1000 & 17 & 1673 &  & 217143\tabularnewline
-\hline 
-\end{tabular}
-\caption{Running times for different sizes.}
-\label{runtimes}
-\end{table}
-
-\subsection{Quality Tests}
-
-The recall and precision values of all four algorithms for different datasets are provided in Table~\ref{recall} and Table~\ref{precision}. The interesting remark is that the recall values of GG, SM and Hungarian are very similar in all the cases. Recall values of GG and SM are even equal. % Discuss the reasons
-The reason for it might be the fact that both algorithms, GG and SM, aim to find the stabe solution. In our case, when the preferrences are acquired after ranking the distances, it is highly credible that the solutions are unique and therefore the same for both algorithms. Even though, we strogly believe in such a claim, we could not come up with a formal proof.
-% Again, the discussion above is quite sloppy. Add something if you can think of.
-
-The other noticeable thing is that for all the algorithms except RNN, the recall value is equal to the precision value. Here the explanation is the nature of the algorithms: they always make $min(\#rows, \#columns)$ matches. Therefore the number of false positives becomes equal to the number of false negatives in the formulas of precision and recall. And thus, from the definitions of the precision and recall follows, that precision becomes equal to recall.
-
-% Read and say whether you agree. I am not totally sure about it.
-
-\[P = \frac{tp}{tp+fp}, R = \frac{tp}{tp+fn}.\]
-
-\[fp=fn \Rightarrow R=P.\]
-
-\begin{table}[tbh]
-\centering
-\begin{tabular}{|c|c|c|c|c|}
-\hline 
-Data File & RNN & Global Greedy & Stable Marriage & Hungarian \tabularnewline
-\hline 
-\hline 
- Np3q2.dm & 79.26\% & 85.95\% & 85.95\% & 86.29\%\tabularnewline
-\hline
- Nw3p2q.dm & 80.27\% & 89.3\% & 89.3\% & 89.97\%\tabularnewline
-\hline 
- Nw5p1q.dm & 81.94\% & 92.64\% & 92.64\% & 92.98\%\tabularnewline
-\hline 
- Nw8p2q.dm & 82.94\% & 89.97\% & 89.97\% & 89.63\%\tabularnewline
-\hline
-\end{tabular}
-\caption{Recall of different algorithms for different data.}
-\label{recall}
-\end{table}
-
-\begin{table}[tbh]
-\centering
-\begin{tabular}{|c|c|c|c|c|}
-\hline 
-Data File & RNN & Global Greedy & Stable Marriage & Hungarian \tabularnewline
-\hline 
-\hline 
- Np3q2.dm & 99.16\% & 85.95\% & 85.95\% & 86.29\%\tabularnewline
-\hline
- Nw3p2q.dm & 98.77\% & 89.3\% & 89.3\% & 89.97\%\tabularnewline
-\hline 
- Nw5p1q.dm & 98.79\% & 92.64\% & 92.64\% & 92.98\%\tabularnewline
-\hline 
- Nw8p2q.dm & 98.41\% & 89.97\% & 89.97\% & 89.63\%\tabularnewline
-\hline
-\end{tabular}
-\caption{Precision of different algorithms for different data.}
-\label{precision}
-\end{table}
 
 \section{Conclusions}
 
-To sum up, even if all four algorithms seem to perform a similar task, they a quite different. The stronger the claim about the solution the algorithm can ensure, the more it pays in complexity. The lowest compexity is acquired by the RRN, which does not guarantee neither the stability, nor the optimality of the solution. A slight increase in complexity is added with the guaranteed stability of the solution. This is acquired by the GG and SM algorithms, which are not only very similar in their complexity and speed, but also equal in the quality measures, such as recall and precision.
+The objective of this project was to implement the TMDA-CI and TMDA-FI algorithms  originally presented in~\cite{bohlen}. In this report the implementation of these algorithms was documented, the differences of the implementations were explained and the advantages of the optimizations used in the original implementation were shown. 
 
-The strongest guarantee of the matching is optimality of the solution. This is gained by the Hungarian algorithm which is the most sophisticated among the ones analysed in the project. Again, there is no such thing as free lunch. If you get more guarantees about the solution (in this case the optimality), you have to pay somehow (in this case $O(n^{4})$ complexity).
+Several different experiments were carried out. The results of the experiments that were repeated were compared with the ones acquired in the original study. The differences of the results were explained and the importance of the optimizations was emphasized.
 
-The experimental results regarding the quality measures suggest the following conclusions. First of all, the highest precision is acquired by the RNN algorithm. The reason is that it matches only if the match is unique and best. Therefore, it leaves out many possible, but not uniquely best matches. This results in the noticeably lower recall values.
-
-In our eperiments the precision and recall values of GG and SM are always the same. At first appearance it seems like a strange coincidence. However, it is explainable by the inherent similarity of the algorithms and their guaranteed characteristic of the solution.
-
-The values of the quality measures for the Hungarian algorithm were also very close to the values of GG and SM. Still, there is a slight increase in most cases in both precision and recall. The reason is the optimality of the solution. If it claims to find the best solution possible, it has to somehow outperform the previous algorithms. And even if the main advantage of it is the promised optimality, i.e. the guarantee that the sum of the distances of the matche is the smallest possible, it is also noticeable that there exists a marginal improvement in the quality measures.
-
-\section{Manual}
+Suggestions for the future work include the search for other optimizations for both algorithms.
 
 %-----------------------------------------------------------
 \addcontentsline{toc}{chapter}{\numberline{}Bibliography}
 
 \begin{thebibliography}{9999}
-%\enlargethispage{\baselineskip}
-\bibitem{augsten}
-Augsten, N.: Approximate Matching of Hierarchical Data. 
-Ph.D. Dissertation, Department of Computer Science Faculty of Engineering and Science Aalborg University
-\bibitem{gale}
-Gale D.; Shapley L. S., College Admissions and the Stability of Marriage, The American Mathematical Monthly,  69(1): 9–15, 1962.
-
-\bibitem{rnn}
-Nikolaus Augsten and Michael B?hlen and Johann Gamper: The pq-Gram Distance between Ordered Labeled Trees, Free University of Bozen-Bolzano, 2010 
-
-\bibitem{ha_firstpub}
-Munkres, James: Algorithms for the Assignment and Transportation Problems, Journal of the Society for Industrial and Applied Mathematics, 5(1): pp. 32-38, Mar., 1957
-
+\bibitem{bohlen}
+Bohlen M., Gamper J., Jensen C. S.: Multi-Dimensional Aggregation for Temporal Data,
+Proceedings of the 10th International Conference on Extending Database Technology: p.p. 257–275, Munich, Germany, 2006.
 \end{thebibliography}
 \vfill
 \begin{flushright}\small Prepared in \LaTeXe\ \end{flushright}
