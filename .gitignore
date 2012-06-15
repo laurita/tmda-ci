@@ -6,3 +6,11 @@ report/*.log
 report/*.synctex.gz(busy)
 .DS_Store
 report/report.synctex.gz
+presentation/tmda.aux
+presentation/tmda.log
+presentation/tmda.nav
+presentation/tmda.out
+presentation/tmda.pdf
+presentation/tmda.snm
+presentation/tmda.synctex.gz
+presentation/tmda.toc

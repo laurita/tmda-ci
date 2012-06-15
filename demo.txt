@@ -1,0 +1,7 @@
+// Runs TMDA-CI on random_02.
+
+ruby tmda_ci_main.rb --database data/tsd.db --group_sql 'SELECT DISTINCT name FROM random_02;' --source_sql 'SELECT * FROM random_02;' --function sum --function_argument 1 --c c --theta 0-0
+
+// Runs TMDA-FI on random_02 with groups_20 as group table.
+
+ruby tmda_fi_main.rb --database data/tsd.db --group_sql 'SELECT * FROM groups_20;' --source_sql 'SELECT * FROM random_02;' --function sum --function_argument 1 --c c --theta 0-0

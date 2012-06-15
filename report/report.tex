@@ -6,6 +6,8 @@
 \usepackage{url}
 \usepackage{fancybox}
 \usepackage[normal]{subfigure}
+\usepackage{algorithm}
+\usepackage{algorithmic}
 
 %
 %%    homebrew commands -- to save typing
@@ -14,6 +16,9 @@
 \newcommand\etal{\textsl{et al.}}
 \newcommand\Quote[1]{\lq\textsl{#1}\rq}
 \newcommand\fr[2]{{\textstyle\frac{#1}{#2}}}
+\let\oldhat\hat
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\renewcommand{\hat}[1]{\oldhat{\mathbf{#1}}}
 %
 %---------------------   end of the 'preamble'
 %
@@ -31,7 +36,7 @@
 
 The objective of this project was to analyze the extension of the multi-dimensional aggregation applied to the data with associated interval values that capture when the data hold. This report describes the Temporal Multi-Dimensional Aggregation (TMDA) operator proposed in~\cite{bohlen} that addresses several challenges posed by interval data. It also reports on an implementation of the operator, on an empirical analysis and compares the results of an empirical study with the ones got in~\cite{bohlen}.
 
-Further the report is structured as follows. In the second section the necessary notation is introduced. In the third section the operator is described and the implementation of two algorithms of the TMDA operator is reported. The fourth section presents the experimental results and their comparison with the results of the previous study. The final section draws the conclusions and suggests future work.
+Further the report is structured as follows. In the second section the necessary notation is introduced. In the third section the operator is described and the implementation of two algorithms of the TMDA operator is reported. The fourth section presents the experimental results and their comparison with the results of the previous study. The fifth section draws the conclusions and suggests future work. Finally, a short manual how to ru the algorithms is given.
 
 \section{Notation}
 
@@ -64,11 +69,61 @@ In the rest of this section two algorithms for the evaluation of TMDA with const
 
 \subsection{The TMDA-CI Algorithm for Constant Intervals}
 
+Algorithm~\ref{alg1} describes the TMDA-CI algorithm implemented in this project. There are two main differences between the original algorithm and this one. Firstlly, here the index is not created for $gt$ on attributes $B_1,\dots,B_m$. Secondly, the optimization used in the original implementation is missing here. Originally, in the initialization part if $\vec{g}$ is a projection over $\vec{r}$, the group table is initially empty and will be populated while scanning the argument tuples. In the procesing part if the group relation is a relational algebra expression, it is possible to extend the group table with a new entry before the function LOOKUP determines all result groups to which data tuple $\vec{r}$ contributes. The differences can be clearly seen when comparing the original TMDA-CI algorithm in \cite{bohlen} and the Algorithms~\ref{alg1}.
 
+The two differences influence the performance of the algorithm. The index is useful when there are many different groupings and the linear scanning of the $gt$ is costly. In our experiments the number of groups was small, therefore the difference is only negligible. The differences are discussed in more detail in the Experiments section.
+
+\begin{algorithm}
+\caption{$\operatorname{TMDA-CI}(\vec{g}, \vec{r}, \vec{F}, \theta, C)$}
+\label{alg1}
+\begin{algorithmic}
+\STATE Initialize $gt$ with (g, empty T), $g \in \vec{g}$, and replace timestamp T by $[- \infty, \star];$
+\STATE $z \leftarrow \emptyset$;
+\FORALL{tuple $r \in \vec{r}$ in chronological order} 
+\FORALL{$i \in LOOKUP(gt,r,\theta)$}
+\IF{$r.T_s > gt[i].T_s$}
+\STATE Insert a new node with time $r.T_s-1$ into $gt[i].T$ (if not already there);
+\FORALL{$v \in gt[i].T$ in chronological order, where $v.t < r.T_s$}
+\STATE $gt[i].T_e \leftarrow v.t$; 
+\STATE $\vec{z} \leftarrow \vec{z} \cup RESULTTUPLE(gt[i], F, C)$; 
+\STATE $gt[i].T \leftarrow [v.t+1,\star]$; 
+\STATE Remove node v from $gt[i].T$;
+\ENDFOR 
+\ENDIF
+\STATE $v \leftarrow$ node in $gt[i].T$ with time $v.t = r.T_e$ (insert a new node if required); 
+\STATE $v.open \leftarrow v.open \cup r[A_1, \dots , A_p, T_s]$;
+\ENDFOR
+\ENDFOR
+\FORALL{$gt[i] \in gt$}
+\FORALL{$v \in gt[i].T$ in chronological order}
+\STATE Create result tuple, add it to $\vec{z}$, and close past nodes in $gt[i].T$;
+\ENDFOR
+\ENDFOR
+\RETURN $\vec{z}$;
+\end{algorithmic}
+\end{algorithm}
   
 \subsection{The TMDA-FI Algorithm for Fixed Intervals}
 
+Algorithm~\ref{alg1} describes the TMDA-FI algorithm implemented in this project. Again there are teo differences between the original TMDA-FI algorithm and the Algorithm~\ref{alg2}. Firstly, the index is created not only on the time attributes, but also on the grouping attributes. Secondly, the optimization for the case when a group table $\vec{g}$ is a relational algebra expression is missing. These differences make a huge decrease in the performance as is discussed in the Experiments section.
 
+\begin{algorithm}
+\caption{$\operatorname{TMDA-FI}(\vec{g}, \vec{r}, \vec{F}, \theta, C)$}
+\label{alg2}
+\begin{algorithmic}
+\STATE Initialize $gt$ to $\vec{g}$ and extend it with columns $f_{A_{i_1}} , \dots , f_{A_{i_p}}$ initialized to NULL;
+\STATE Create index for $gt$ on attributes $T, A_1,\dots,A_m$ ;
+\FORALL{tuple $r \in \vec{r}$} 
+\FORALL{$i \in LOOKUP(gt,r,θ)$}
+\STATE $r^{'} \leftarrow ADJUST(r, gt[i].T, C)$; 
+\FORALL{$f_j \in \vec{F}$}
+\STATE $gt[i].f_{A_{i_j}} \leftarrow gt[i].f_{A_{i_j}} \bigoplus r^{'}.A_{i_1}$; 
+\ENDFOR
+\ENDFOR
+\ENDFOR
+\RETURN $gt$;
+\end{algorithmic}
+\end{algorithm}
 
 
 
@@ -152,6 +207,14 @@ Several different experiments were carried out. The results of the experiments t
 
 Suggestions for the future work include the search for other optimizations for both algorithms.
 
+\section{Manual}
+
+In order to run the TMDA-CI algorithm, type \textit{ruby tmda\_ci\_main.rb} with the list of the arguments on the command line. Type \textit{ruby tmda\_ci\_main.rb -h} for the explanation. The example could be:\\ \textit{ruby tmda\_ci\_main.rb - -database data/tsd.db - -group\_sql 'SELECT DISTINCT name FROM random\_02;' - -source\_sql 'SELECT * FROM random\_02;' - -function sum - -function\_argument 1 - -c c - -theta 0-0}.
+
+
+
+In order to run the TMDA-FI algorithm, type \textit{ruby tmda\_fi\_main.rb} with the list of argumants on the command line. Type \textit{ruby tmda\_fi\_main.rb -h} for the explanation. The example could be:\\ \textit{ruby tmda\_fi\_main.rb - -database data/tsd.db - -group\_sql 'SELECT * FROM groups\_20;' - -source\_sql 'SELECT * FROM random\_02;' - -function sum - -function\_argument 1 - -c c - -theta 0-0}.
+
 %-----------------------------------------------------------
 \addcontentsline{toc}{chapter}{\numberline{}Bibliography}
 
@@ -163,8 +226,4 @@ Proceedings of the 10th International Conference on Extending Database Technolog
 \vfill
 \begin{flushright}\small Prepared in \LaTeXe\ \end{flushright}
 
-%-----------------------------------------------------------
-\appendix
-\section{Section Name}
-%-----------------------------------------------------------
 \end{document}
